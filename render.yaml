@@ -1,0 +1,15 @@
+# Render Blueprint
+# 用法：把整个 sync-room 目录推到 GitHub，然后在 Render 里 New → Blueprint 选这个仓库。
+# 免费实例 15 分钟无人访问会休眠，第一局打开可能要等 30 秒左右。
+services:
+  - type: web
+    name: sync-room
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: "echo no-dependencies"
+    startCommand: "node server.js"
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "20"

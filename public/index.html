@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+<meta name="theme-color" content="#07080c" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>同频 · SYNC ROOM</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b0f16'/%3E%3Ccircle cx='12' cy='16' r='5' fill='%236fe3ff' opacity='.85'/%3E%3Ccircle cx='20' cy='16' r='5' fill='%23ffb072' opacity='.85'/%3E%3C/svg%3E" />
+<style>
+  :root {
+    --bg: #07080c;
+    --text: #e9eef6;
+    --muted: #8b97a8;
+    --a: #6fe3ff;
+    --b: #ffb072;
+    --line: rgba(255, 255, 255, .10);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    overflow: hidden; overscroll-behavior: none;
+    -webkit-user-select: none; user-select: none;
+    touch-action: manipulation;
+    font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  #cv { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  .hidden { display: none !important; }
+
+  .screen {
+    position: fixed; inset: 0; z-index: 10;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px; text-align: center;
+    padding: calc(26px + env(safe-area-inset-top)) 26px calc(26px + env(safe-area-inset-bottom));
+  }
+  .overlay {
+    position: fixed; inset: 0; z-index: 30;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(4, 6, 10, .66);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    padding: 24px;
+  }
+
+  .brand-cn { font-size: 46px; font-weight: 300; letter-spacing: .32em; text-indent: .32em; }
+  .brand-en { font-size: 10px; letter-spacing: .5em; text-indent: .5em; color: var(--muted); margin-top: 10px; }
+  .lead { font-size: 13px; line-height: 1.9; color: var(--muted); margin: 6px 0 10px; }
+
+  .btn {
+    appearance: none; border: 1px solid rgba(255, 255, 255, .14);
+    background: rgba(255, 255, 255, .05); color: var(--text);
+    font-family: inherit; font-size: 15px; letter-spacing: .08em;
+    min-height: 50px; min-width: 200px; padding: 13px 26px; border-radius: 999px;
+    transition: transform .12s ease, background .18s ease;
+  }
+  .btn:active { transform: scale(.97); background: rgba(255, 255, 255, .10); }
+  .btn[disabled] { opacity: .45; }
+  .btn.primary {
+    border-color: rgba(111, 227, 255, .42);
+    background: rgba(111, 227, 255, .12);
+    color: #c9f4ff;
+    box-shadow: 0 0 34px rgba(111, 227, 255, .12);
+  }
+  .btn.small { min-width: 84px; min-height: 48px; padding: 10px 18px; }
+  .btn.danger { color: #ff9b9b; border-color: rgba(255, 120, 120, .22); }
+  .btns { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 260px; }
+  .btns .btn { width: 100%; }
+
+  .joinbox { display: flex; gap: 10px; align-items: center; }
+  #codeInput {
+    width: 148px; height: 50px; text-align: center;
+    font-size: 22px; letter-spacing: .32em; text-indent: .32em;
+    color: var(--text); background: rgba(255, 255, 255, .06);
+    border: 1px solid var(--line); border-radius: 14px; outline: none;
+    font-family: inherit;
+  }
+  #codeInput::placeholder { font-size: 13px; letter-spacing: .06em; color: #5d6878; }
+
+  .code {
+    font-size: 54px; letter-spacing: .18em; text-indent: .18em; font-weight: 300;
+    color: #dff6ff; text-shadow: 0 0 28px rgba(111, 227, 255, .45);
+  }
+  .pulse { animation: breathe 2.4s ease-in-out infinite; }
+  @keyframes breathe { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+  .link {
+    appearance: none; background: none; border: none; color: var(--muted);
+    font-family: inherit; font-size: 13px; padding: 12px; min-height: 44px;
+  }
+  .muted { color: var(--muted); font-size: 13px; }
+  .small { font-size: 11px; }
+  .linktext {
+    font-size: 11px; line-height: 1.6; color: #67728a;
+    max-width: 300px; word-break: break-all; text-align: center;
+    -webkit-user-select: text; user-select: text;
+  }
+  #netHint { color: #d9a15c; max-width: 290px; line-height: 1.7; }
+
+  #hud {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 20;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: calc(12px + env(safe-area-inset-top)) 16px 0;
+    pointer-events: none;
+  }
+  #hud > * { pointer-events: auto; }
+  .prog { font-size: 11px; letter-spacing: .26em; color: #7d8a9c; }
+  .iconbtn {
+    width: 38px; height: 38px; border-radius: 50%;
+    border: 1px solid var(--line); background: rgba(255, 255, 255, .05);
+    color: #9aa7b8; font-size: 10px; letter-spacing: 0;
+    display: grid; place-items: center; font-family: inherit;
+  }
+
+  #signals {
+    position: fixed; left: 0; right: 0; z-index: 20;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    display: flex; gap: 8px; justify-content: center; padding: 0 14px;
+  }
+  .sig {
+    flex: 1; max-width: 108px; min-height: 44px;
+    border-radius: 999px; border: 1px solid var(--line);
+    background: rgba(255, 255, 255, .04); color: #94a2b4;
+    font-family: inherit; font-size: 12px; letter-spacing: .04em;
+  }
+  .sig:active { background: rgba(255, 255, 255, .12); color: #fff; }
+  .sig.cool { opacity: .35; }
+
+  .card {
+    width: min(330px, 88vw);
+    background: rgba(14, 17, 24, .94);
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 26px; padding: 26px 22px;
+    display: flex; flex-direction: column; gap: 10px; align-items: center;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, .55);
+  }
+  .card h2 { font-size: 19px; font-weight: 500; letter-spacing: .12em; margin: 0 0 6px; }
+  .card .btn { width: 100%; }
+
+  .toast {
+    position: fixed; left: 50%; z-index: 40;
+    top: calc(58px + env(safe-area-inset-top));
+    transform: translate(-50%, -8px);
+    background: rgba(18, 22, 30, .94);
+    border: 1px solid var(--line); color: #dfe7f2;
+    font-size: 13px; padding: 9px 18px; border-radius: 999px;
+    opacity: 0; transition: opacity .22s ease, transform .22s ease;
+    pointer-events: none; white-space: nowrap; max-width: 86vw;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  #cardCv {
+    width: min(300px, 74vw);
+    height: auto;
+    border-radius: 18px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, .5);
+  }
+  .clear-ico { font-size: 26px; color: #bfefff; text-shadow: 0 0 24px rgba(111, 227, 255, .8); }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<!-- 首页 -->
+<section id="home" class="screen">
+  <div>
+    <div class="brand-cn">同频</div>
+    <div class="brand-en">SYNC ROOM</div>
+  </div>
+  <p class="lead">两个人，两部手机，各看见一半。<br>说出来，才完整。</p>
+  <div class="btns">
+    <button id="createBtn" class="btn primary" disabled>创建房间</button>
+    <button id="joinBtn" class="btn" disabled>输入房间码</button>
+  </div>
+  <div id="joinBox" class="joinbox hidden">
+    <input id="codeInput" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="4 位房间码" />
+    <button id="joinGo" class="btn small">进入</button>
+  </div>
+  <div id="connHint" class="muted small">正在连接…</div>
+</section>
+
+<!-- 等待对方 -->
+<section id="wait" class="screen hidden">
+  <div class="muted">把链接发给 TA，或让 TA 输入房间码</div>
+  <div id="codeBig" class="code">----</div>
+  <div id="waitMsg" class="muted pulse">等待对方进入…</div>
+  <button id="inviteBtn" class="btn primary">邀请 TA 进来</button>
+  <div id="inviteLink" class="linktext"></div>
+  <div id="netHint" class="muted small hidden">这是局域网地址，异地的好友打不开——看 README「让不同 WiFi 也能玩」</div>
+  <button id="cancelWait" class="link">退出</button>
+</section>
+
+<!-- 游戏 HUD -->
+<div id="hud" class="hidden">
+  <div id="prog" class="prog">1-1</div>
+  <button id="pauseBtn" class="iconbtn" aria-label="暂停">❚❚</button>
+</div>
+<div id="signals" class="hidden">
+  <button class="sig" data-k="see">我看到了</button>
+  <button class="sig" data-k="wait">等一下</button>
+  <button class="sig" data-k="ok">可以了</button>
+</div>
+
+<!-- 暂停 -->
+<section id="pause" class="overlay hidden">
+  <div class="card">
+    <h2>暂停</h2>
+    <button id="resumePlay" class="btn primary">继续</button>
+    <button id="restartBtn" class="btn">重置本机关</button>
+    <button id="soundBtn" class="btn">音效：开</button>
+    <button id="leaveBtn" class="btn danger">退出房间</button>
+  </div>
+</section>
+
+<!-- 过关 -->
+<section id="clear" class="overlay hidden">
+  <div class="card">
+    <div class="clear-ico">✦</div>
+    <h2 id="clearTitle">通了</h2>
+    <p id="clearSub" class="muted small">第 1 关 · 完成</p>
+    <button id="nextBtn" class="btn primary">继续</button>
+  </div>
+</section>
+
+<!-- 章节完成 -->
+<section id="end" class="screen hidden">
+  <div class="muted small">第一章 · 完成</div>
+  <canvas id="cardCv" width="300" height="430"></canvas>
+  <div class="muted small">两张并排，才是一整张</div>
+  <button id="saveCard" class="btn">保存这一半</button>
+</section>
+
+<div id="toast" class="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ============================ 基础 ============================ */
+
+  var $ = function (s) { return document.querySelector(s); };
+
+  var COL = {
+    a: '#6fe3ff',
+    b: '#ffb072',
+    text: '#e9eef6',
+    muted: '#8b97a8',
+    line: 'rgba(255,255,255,.10)'
+  };
+
+  var CLEAR_TITLE = { '1-1': '灯亮了', '1-2': '光到了', '1-3': '同频了' };
+  var SIGNAL_LABEL = { see: '我看到了', wait: '等一下', ok: '可以了' };
+
+  var S = {
+    screen: 'home',
+    side: null,
+    code: null,
+    token: null,
+    level: null,
+    view: null,
+    solved: false,
+    phase: 'play',
+    peerOnline: false,
+    peerPing: null,
+    peerPingAt: 0,
+    stats: {},
+    ready: { A: false, B: false },
+    paused: false,
+    ended: false,
+    peerGlow: 0,
+    holding: false,
+    lastSeq: 0
+  };
+
+  var PENDING_CODE = '';
+  var LAST_CODE = '';
+
+  function rgba(hex, a) {
+    var n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
+
+  /* ============================ 画布 ============================ */
+
+  var cv = $('#cv');
+  var ctx = cv.getContext('2d');
+  var DPR = 1, VW = 0, VH = 0, SC = 1, OX = 0, OY = 0;
+
+  function resize() {
+    var w = window.innerWidth;
+    var h = window.innerHeight;
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = Math.round(w * DPR);
+    cv.height = Math.round(h * DPR);
+    cv.style.width = w + 'px';
+    cv.style.height = h + 'px';
+    VW = w; VH = h;
+    SC = Math.min(w / 360, h / 640);
+    OX = (w - 360 * SC) / 2;
+    OY = (h - 640 * SC) / 2;
+  }
+  window.addEventListener('resize', resize);
+  window.addEventListener('orientationchange', function () { setTimeout(resize, 260); });
+  resize();
+
+  function rr(x, y, w, h, r) {
+    ctx.beginPath();
+    if (ctx.roundRect) { ctx.roundRect(x, y, w, h, r); return; }
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function txt(str, x, y, size, color, align, weight) {
+    ctx.save();
+    ctx.font = (weight || 400) + ' ' + size + 'px system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.fillStyle = color;
+    ctx.textAlign = align || 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(str, x, y);
+    ctx.restore();
+  }
+
+  function shapePath(kind, x, y, s) {
+    ctx.beginPath();
+    if (kind === 0) {
+      ctx.arc(x, y, s, 0, Math.PI * 2);
+    } else if (kind === 1) {
+      var h = s * 1.18;
+      ctx.moveTo(x, y - h);
+      ctx.lineTo(x + h * 0.94, y + h * 0.78);
+      ctx.lineTo(x - h * 0.94, y + h * 0.78);
+      ctx.closePath();
+    } else {
+      var q = s * 0.86;
+      ctx.rect(x - q, y - q, q * 2, q * 2);
+    }
+  }
+
+  function drawDots(n, x, y, r, color) {
+    var pos = [
+      [[0, 0]],
+      [[-9, -5], [9, 5]],
+      [[-9, -6], [9, -6], [0, 8]]
+    ][n] || [[0, 0]];
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 12;
+    for (var i = 0; i < pos.length; i++) {
+      ctx.beginPath();
+      ctx.arc(x + pos[i][0], y + pos[i][1], r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /* ============================ 背景 ============================ */
+
+  var motes = [];
+  for (var mi = 0; mi < 26; mi++) {
+    motes.push({
+      x: Math.random(), y: Math.random(),
+      r: Math.random() * 1.5 + 0.5,
+      s: Math.random() * 0.6 + 0.25,
+      p: Math.random() * 6.28
+    });
+  }
+
+  function drawAmbient(t) {
+    ctx.fillStyle = '#07080c';
+    ctx.fillRect(0, 0, VW, VH);
+
+    var x1 = VW * 0.5 + Math.sin(t * 0.00011) * VW * 0.2;
+    var y1 = VH * 0.28 + Math.cos(t * 0.00017) * VH * 0.05;
+    var g = ctx.createRadialGradient(x1, y1, 0, x1, y1, Math.max(VW, VH) * 0.6);
+    g.addColorStop(0, 'rgba(80,180,215,.10)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, VW, VH);
+
+    var x2 = VW * 0.5 + Math.cos(t * 0.00009 + 1.6) * VW * 0.22;
+    var y2 = VH * 0.72 + Math.sin(t * 0.00013) * VH * 0.05;
+    g = ctx.createRadialGradient(x2, y2, 0, x2, y2, Math.max(VW, VH) * 0.55);
+    g.addColorStop(0, 'rgba(215,150,90,.08)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, VW, VH);
+
+    for (var i = 0; i < motes.length; i++) {
+      var m = motes[i];
+      var mx = ((m.x + t * 0.000008 * m.s) % 1) * VW;
+      var my = (m.y + Math.sin(t * 0.0004 + m.p) * 0.012) * VH;
+      var al = 0.10 + 0.18 * (0.5 + 0.5 * Math.sin(t * 0.001 + m.p));
+      ctx.fillStyle = 'rgba(190,220,255,' + al + ')';
+      ctx.beginPath();
+      ctx.arc(mx, my, m.r, 0, 6.283);
+      ctx.fill();
+    }
+  }
+
+  function drawPeerGlow() {
+    if (!S.side) return;
+    var dt = performance.now() - S.peerGlow;
+    if (dt > 1500) return;
+    var k = 1 - dt / 1500;
+    var c = S.side === 'A' ? COL.b : COL.a;
+    var g = ctx.createRadialGradient(VW * 0.5, VH + 40, 10, VW * 0.5, VH + 40, Math.max(VW, VH) * 0.55);
+    g.addColorStop(0, rgba(c, 0.16 * k));
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, VH * 0.55, VW, VH * 0.45);
+  }
+
+  /* ============================ 关卡渲染 ============================ */
+
+  function drawLevel(t) {
+    if (!S.level || !S.view) return;
+    var id = S.level.id;
+    if (id === '1-1') draw11(t);
+    else if (id === '1-2') draw12(t);
+    else if (id === '1-3') draw13(t);
+  }
+
+  function pinged(i) {
+    return S.peerPing && S.peerPing.i === i && (performance.now() - S.peerPingAt) < 2200;
+  }
+
+  /* ---- 1-1 三盏灯 ---- */
+  function draw11() {
+    var v = S.view;
+    var isA = S.side === 'A';
+
+    txt('1-1 · 三盏灯', 180, 82, 13, COL.muted);
+    txt(isA ? '读出每盏灯要的形状' : '转出 TA 说的形状', 180, 108, 14, COL.text);
+
+    for (var i = 0; i < 3; i++) {
+      var y = 190 + i * 96;
+      var lit = pinged(i + 1);
+
+      rr(30, y - 40, 300, 80, 18);
+      ctx.fillStyle = 'rgba(255,255,255,.045)';
+      ctx.fill();
+      ctx.strokeStyle = lit ? rgba(isA ? COL.b : COL.a, 0.9) : COL.line;
+      ctx.lineWidth = lit ? 2 : 1;
+      ctx.stroke();
+
+      txt(String(i + 1), 54, y, 20, isA ? COL.a : COL.b, 'center', 600);
+
+      var sx = 272;
+      if (isA) {
+        ctx.save();
+        ctx.strokeStyle = COL.a;
+        ctx.lineWidth = 2;
+        ctx.shadowColor = COL.a;
+        ctx.shadowBlur = 14;
+        shapePath(v.req ? v.req[i] : 0, sx, y, 15);
+        ctx.stroke();
+        ctx.restore();
+        txt('需要', sx, y + 30, 11, COL.muted);
+        if (v.checked) {
+          var ok = v.checked[i];
+          txt(ok ? '✓' : '✕', 198, y, 20, ok ? '#6ee7a8' : '#ff7a7a', 'center', 700);
+        }
+      } else {
+        ctx.save();
+        ctx.fillStyle = rgba(COL.b, 0.9);
+        ctx.shadowColor = COL.b;
+        ctx.shadowBlur = 16;
+        shapePath(v.cur ? v.cur[i] : 0, sx, y, 15);
+        ctx.fill();
+        ctx.restore();
+        txt('轻点', sx, y + 30, 11, COL.muted);
+      }
+    }
+
+    if (isA) {
+      rr(102, 474, 156, 52, 26);
+      ctx.fillStyle = 'rgba(111,227,255,.14)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(111,227,255,.55)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      txt('点亮', 180, 500, 17, COL.a, 'center', 600);
+    } else {
+      txt('轻点旋钮，切换形状', 180, 500, 13, COL.muted);
+    }
+  }
+
+  /* ---- 1-2 四面镜 ---- */
+  var CELL = 34, COLS = 7, ROWS = 9, GX = 61, GY = 118;
+  function cellX(c) { return GX + c * CELL + CELL / 2; }
+  function cellY(r) { return GY + r * CELL + CELL / 2; }
+
+  function draw12(t) {
+    var v = S.view;
+    var isA = S.side === 'A';
+
+    txt('1-2 · 四面镜', 180, 78, 13, COL.muted);
+    txt(isA ? '引导光落到符文的格子上' : '问 TA：光现在照到哪了', 180, 104, 14, COL.text);
+
+    if (isA) {
+      rr(GX - 8, GY - 8, COLS * CELL + 16, ROWS * CELL + 16, 16);
+      ctx.fillStyle = 'rgba(255,255,255,.028)';
+      ctx.fill();
+      ctx.strokeStyle = COL.line;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // 目标符文
+      var tx = cellX(v.target.c), ty = cellY(v.target.r);
+      ctx.save();
+      ctx.translate(tx, ty);
+      ctx.rotate(Math.PI / 4);
+      ctx.strokeStyle = rgba(COL.b, 0.85);
+      ctx.lineWidth = 2;
+      ctx.shadowColor = COL.b;
+      ctx.shadowBlur = 16;
+      ctx.strokeRect(-8, -8, 16, 16);
+      ctx.restore();
+
+      // 光路
+      var path = v.path || [];
+      if (path.length > 1) {
+        ctx.save();
+        ctx.beginPath();
+        for (var i = 0; i < path.length; i++) {
+          var x = cellX(path[i][0]), y = cellY(path[i][1]);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = 'rgba(255,232,170,.8)';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = 'rgba(255,208,120,.9)';
+        ctx.shadowBlur = 14;
+        ctx.stroke();
+        ctx.restore();
+
+        // 流动的光点
+        var f = ((t * 0.00045) % 1) * (path.length - 1);
+        var i0 = Math.floor(f);
+        var i1 = Math.min(i0 + 1, path.length - 1);
+        var k = f - i0;
+        var px = cellX(path[i0][0]) + (cellX(path[i1][0]) - cellX(path[i0][0])) * k;
+        var py = cellY(path[i0][1]) + (cellY(path[i1][1]) - cellY(path[i0][1])) * k;
+        ctx.save();
+        ctx.fillStyle = '#fff3cf';
+        ctx.shadowColor = '#ffd98a';
+        ctx.shadowBlur = 16;
+        ctx.beginPath();
+        ctx.arc(px, py, 3.2, 0, 6.283);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // 镜子：A 只看得见节点位置和编号，看不见镜面朝向（那是 B 的信息）
+      for (var j = 0; j < (v.mirrors || []).length; j++) {
+        var m = v.mirrors[j];
+        var mx = cellX(m.c), my = cellY(m.r);
+        var lit2 = pinged(m.i);
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(mx, my, 13, 0, 6.283);
+        ctx.fillStyle = 'rgba(207,217,232,.10)';
+        ctx.fill();
+        ctx.strokeStyle = lit2 ? COL.b : 'rgba(207,217,232,.75)';
+        ctx.lineWidth = lit2 ? 2.5 : 2;
+        if (lit2) { ctx.shadowColor = COL.b; ctx.shadowBlur = 16; }
+        ctx.stroke();
+        ctx.restore();
+        txt(String(m.i), mx, my, 11, '#cfd9e8', 'center', 600);
+      }
+
+      // 两个光源
+      for (var s = 0; s < 2; s++) {
+        var sy = cellY(s === 0 ? 2 : 6);
+        var active = (v.src | 0) === s;
+        rr(14, sy - 20, 30, 40, 10);
+        ctx.fillStyle = active ? rgba(COL.a, 0.2) : 'rgba(255,255,255,.04)';
+        ctx.fill();
+        ctx.strokeStyle = active ? rgba(COL.a, 0.8) : COL.line;
+        ctx.lineWidth = active ? 1.6 : 1;
+        ctx.stroke();
+        txt(String(s + 1), 29, sy, 13, active ? COL.a : COL.muted, 'center', 600);
+      }
+      txt('轻点镜子可以叫 TA 看这面', 180, 470, 11, COL.muted);
+    } else {
+      var spots = [[30, 150], [190, 150], [30, 290], [190, 290]];
+      for (var q = 0; q < (v.mirrors || []).length; q++) {
+        var mm = v.mirrors[q];
+        var bx = spots[q][0], by = spots[q][1];
+        var lit3 = pinged(mm.i);
+        rr(bx, by, 140, 118, 20);
+        ctx.fillStyle = 'rgba(255,255,255,.04)';
+        ctx.fill();
+        ctx.strokeStyle = lit3 ? rgba(COL.a, 0.85) : rgba(COL.b, 0.22);
+        ctx.lineWidth = lit3 ? 2 : 1;
+        ctx.stroke();
+
+        txt('镜 ' + mm.i, bx + 70, by + 22, 11, COL.muted);
+        ctx.save();
+        ctx.translate(bx + 70, by + 60);
+        ctx.rotate(mm.a === '/' ? Math.PI / 4 : -Math.PI / 4);
+        ctx.strokeStyle = rgba(COL.b, 0.95);
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.shadowColor = rgba(COL.b, 0.7);
+        ctx.shadowBlur = 16;
+        ctx.beginPath();
+        ctx.moveTo(0, -17);
+        ctx.lineTo(0, 17);
+        ctx.stroke();
+        ctx.restore();
+        txt('轻点旋转', bx + 70, by + 96, 10, COL.muted);
+      }
+      txt('光源 ' + (((v.src | 0) + 1)), 180, 470, 12, COL.muted);
+    }
+  }
+
+  /* ---- 1-3 同频 ---- */
+  function draw13() {
+    var v = S.view;
+    var isA = S.side === 'A';
+
+    txt('1-3 · 同频', 180, 78, 13, COL.muted);
+
+    if (isA) {
+      txt('三个转子都要变成这样', 180, 110, 13, COL.text);
+      for (var d = 0; d < 3; d++) {
+        drawDots(v.target ? v.target[d] : 0, 145 + d * 35, 142, 5, COL.a);
+      }
+    } else {
+      txt('目标只有 TA 看得见', 180, 124, 13, COL.text);
+    }
+
+    for (var i = 0; i < 3; i++) {
+      var x = 84 + i * 96, y = 300, r = 44;
+      var owner = (i === 0 || i === 2) ? 'A' : 'B';
+      var mine = owner === S.side;
+      var accent = owner === 'A' ? COL.a : COL.b;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, 6.283);
+      ctx.fillStyle = 'rgba(255,255,255,.035)';
+      ctx.fill();
+      ctx.strokeStyle = rgba(accent, mine ? 0.55 : 0.18);
+      ctx.lineWidth = mine ? 2 : 1;
+      if (mine) { ctx.shadowColor = rgba(accent, 0.6); ctx.shadowBlur = 16; }
+      ctx.stroke();
+      ctx.restore();
+
+      var val;
+      if (isA) val = i === 1 ? null : (v.own ? v.own[i === 0 ? 0 : 1] : null);
+      else val = v.cur ? v.cur[i] : null;
+
+      if (val === null || val === undefined) {
+        txt('?', x, y, 30, 'rgba(255,255,255,.24)', 'center', 300);
+      } else {
+        drawDots(val, x, y, 6, rgba(accent, 0.95));
+      }
+      txt('#' + (i + 1), x, y + r + 16, 11, COL.muted);
+    }
+
+    var hx = 180, hy = 460, hr = 48;
+    var prog = Math.min(1, (v.holdMs || 0) / 2000);
+    var other = isA ? 'B' : 'A';
+    var bothHeld = v.hold && v.hold.A && v.hold.B;
+
+    ctx.beginPath();
+    ctx.arc(hx, hy, hr, 0, 6.283);
+    ctx.strokeStyle = 'rgba(255,255,255,.10)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    if (prog > 0) {
+      ctx.beginPath();
+      ctx.arc(hx, hy, hr, -Math.PI / 2, -Math.PI / 2 + 6.283 * prog);
+      ctx.strokeStyle = rgba(COL.a, 0.9);
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.shadowColor = rgba(COL.a, 0.8);
+      ctx.shadowBlur = 16;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+
+    ctx.beginPath();
+    ctx.arc(hx, hy, hr - 10, 0, 6.283);
+    ctx.fillStyle = bothHeld ? 'rgba(111,227,255,.16)' : 'rgba(255,255,255,.05)';
+    ctx.fill();
+
+    txt('同频', hx, hy, 18, bothHeld ? COL.a : '#c9d4e2', 'center', 600);
+
+    if (v.hold && v.hold[other]) {
+      txt('TA 已按住', 180, 530, 11, rgba(isA ? COL.b : COL.a, 0.85));
+    }
+    txt('两人同时按住 2 秒', 180, 558, 12, COL.muted);
+  }
+
+  /* ============================ 主循环 ============================ */
+
+  function loop(t) {
+    requestAnimationFrame(loop);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    drawAmbient(t);
+
+    if ((S.screen === 'game' || S.screen === 'pause') && S.level && S.view) {
+      ctx.save();
+      ctx.translate(OX, OY);
+      ctx.scale(SC, SC);
+      drawLevel(t);
+      ctx.restore();
+    }
+    drawPeerGlow();
+  }
+
+  /* ============================ 音效 ============================ */
+
+  var SFX = {
+    ctx: null,
+    master: null,
+    on: true,
+    init: function () {
+      if (this.ctx) {
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        return;
+      }
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      this.ctx = new AC();
+      this.master = this.ctx.createGain();
+      this.master.gain.value = 0.2;
+      this.master.connect(this.ctx.destination);
+    },
+    tone: function (f, dur, type, vol, delay, slide) {
+      if (!this.on || !this.ctx) return;
+      try {
+        var t0 = this.ctx.currentTime + (delay || 0);
+        var o = this.ctx.createOscillator();
+        var g = this.ctx.createGain();
+        o.type = type || 'sine';
+        o.frequency.setValueAtTime(f, t0);
+        if (slide) o.frequency.exponentialRampToValueAtTime(slide, t0 + dur);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.linearRampToValueAtTime(vol || 0.4, t0 + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        o.connect(g);
+        g.connect(this.master);
+        o.start(t0);
+        o.stop(t0 + dur + 0.03);
+      } catch (e) { /* ignore */ }
+    },
+    click: function () { this.tone(660, 0.06, 'sine', 0.35); },
+    turn: function () { this.tone(392, 0.09, 'triangle', 0.35); },
+    wrong: function () { this.tone(160, 0.22, 'sawtooth', 0.18, 0, 95); },
+    solved: function () {
+      var self = this;
+      [523.25, 659.25, 783.99].forEach(function (f, i) { self.tone(f, 0.85, 'sine', 0.32, i * 0.08); });
+    },
+    ping: function () { this.tone(880, 0.09, 'sine', 0.3); this.tone(1174, 0.11, 'sine', 0.22, 0.07); },
+    hold: function () { this.tone(70, 0.16, 'sine', 0.4); }
+  };
+
+  document.addEventListener('pointerdown', function () { SFX.init(); }, { passive: true });
+
+  /* ============================ 网络 ============================ */
+
+  var ws = null;
+  var retryTimer = null;
+  var retryCount = 0;
+  var closing = false;
+
+  function wsURL() {
+    var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return proto + '//' + location.host + '/ws';
+  }
+
+  function send(obj) {
+    if (ws && ws.readyState === 1) {
+      try { ws.send(JSON.stringify(obj)); } catch (e) { /* ignore */ }
+    }
+  }
+
+  function saveSession() {
+    try {
+      localStorage.setItem('sync.session', JSON.stringify({
+        code: S.code, side: S.side, token: S.token, at: Date.now()
+      }));
+    } catch (e) { /* ignore */ }
+  }
+
+  function loadSession() {
+    try { return JSON.parse(localStorage.getItem('sync.session') || 'null'); } catch (e) { return null; }
+  }
+
+  function clearSession() {
+    try { localStorage.removeItem('sync.session'); } catch (e) { /* ignore */ }
+  }
+
+  function connect() {
+    clearTimeout(retryTimer);
+    closing = false;
+    try {
+      ws = new WebSocket(wsURL());
+    } catch (e) {
+      return scheduleReconnect();
+    }
+
+    ws.onopen = function () {
+      retryCount = 0;
+      setConnected(true);
+
+      if (S.code && S.token) {
+        send({ t: 'resume', code: S.code, side: S.side, token: S.token });
+        return;
+      }
+
+      // 邀请链接优先：打开 ?code=1234 直接进房
+      if (PENDING_CODE) {
+        LAST_CODE = PENDING_CODE;
+        clearSession();
+        send({ t: 'join', code: PENDING_CODE });
+        PENDING_CODE = '';
+        try { history.replaceState(null, '', location.pathname); } catch (e) { /* ignore */ }
+        toast('正在进入房间 ' + LAST_CODE + '…');
+        return;
+      }
+
+      var s = loadSession();
+      if (s && s.code && Date.now() - s.at < 7200 * 1000) {
+        send({ t: 'resume', code: s.code, side: s.side, token: s.token });
+      }
+    };
+
+    ws.onmessage = function (ev) {
+      var m;
+      try { m = JSON.parse(ev.data); } catch (e) { return; }
+      handle(m);
+    };
+
+    ws.onclose = function () {
+      setConnected(false);
+      if (!closing) scheduleReconnect();
+    };
+
+    ws.onerror = function () { /* onclose 会接手 */ };
+  }
+
+  function scheduleReconnect() {
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(connect, Math.min(4000, 500 * Math.pow(1.5, retryCount++)));
+  }
+
+  function setConnected(ok) {
+    $('#createBtn').disabled = !ok;
+    $('#joinBtn').disabled = !ok;
+    var hint = $('#connHint');
+    if (hint) hint.textContent = ok ? '' : '连接断开，正在重连…';
+    if (!ok) toast('连接断开，正在重连…');
+  }
+
+  function handle(m) {
+    switch (m.t) {
+      case 'room':
+        S.code = m.code;
+        S.side = m.side;
+        S.token = m.token;
+        saveSession();
+        break;
+      case 'state':
+        applyState(m);
+        break;
+      case 'signal':
+        toast('TA：' + (SIGNAL_LABEL[m.kind] || ''));
+        SFX.ping();
+        S.peerGlow = performance.now();
+        break;
+      case 'error':
+        toast(m.msg || '出错了');
+        if (m.fatal || S.screen !== 'game') {
+          clearSession();
+          goHome();
+          if (LAST_CODE) {
+            $('#codeInput').value = LAST_CODE;
+            $('#joinBox').classList.remove('hidden');
+          }
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
+  /* ============================ 状态应用 ============================ */
+
+  function applyState(m) {
+    var prevSolved = S.solved;
+    var prevLevel = S.level && S.level.id;
+
+    S.view = m.view;
+    S.level = m.level;
+    S.solved = m.solved;
+    S.phase = m.phase;
+    S.peerOnline = m.peerOnline;
+    S.stats = m.stats || {};
+    S.ready = m.ready || { A: false, B: false };
+    if (typeof m.seq === 'number') S.lastSeq = m.seq;
+
+    if (prevLevel && prevLevel !== m.level.id) {
+      S.holding = false;
+    }
+
+    if (m.peerPing && (!S.peerPing || m.peerPing.at !== S.peerPing.at)) {
+      S.peerPing = m.peerPing;
+      S.peerPingAt = performance.now();
+      SFX.ping();
+    }
+
+    if (m.by && m.by !== S.side) {
+      S.peerGlow = performance.now();
+    }
+
+    if (m.phase === 'end') {
+      showEnd();
+      return;
+    }
+
+    if (S.solved && !prevSolved) SFX.solved();
+
+    if (m.level.id === '1-1' && S.side === 'A' && m.by === 'A' &&
+        m.view && m.view.checked && m.view.checked.some(function (x) { return !x; }) && !m.solved) {
+      SFX.wrong();
+    }
+
+    if (!S.peerOnline) {
+      showWait(S.side === 'A' ? '等待对方进入…' : '对方掉线了，等待重连…');
+      return;
+    }
+
+    if (S.paused) return;
+
+    showGame();
+    if (S.solved) showClear(); else hideClear();
+  }
+
+  /* ============================ 界面切换 ============================ */
+
+  function hideAll() {
+    ['home', 'wait', 'end'].forEach(function (id) { $('#' + id).classList.add('hidden'); });
+    $('#hud').classList.add('hidden');
+    $('#signals').classList.add('hidden');
+    hideClear();
+    $('#pause').classList.add('hidden');
+  }
+
+  function showGame() {
+    S.screen = 'game';
+    $('#home').classList.add('hidden');
+    $('#wait').classList.add('hidden');
+    $('#end').classList.add('hidden');
+    $('#hud').classList.remove('hidden');
+    $('#signals').classList.remove('hidden');
+    if (S.level) $('#prog').textContent = S.level.id;
+  }
+
+  function showWait(msg) {
+    S.screen = 'wait';
+    $('#home').classList.add('hidden');
+    $('#end').classList.add('hidden');
+    $('#hud').classList.add('hidden');
+    $('#signals').classList.add('hidden');
+    hideClear();
+    $('#wait').classList.remove('hidden');
+    $('#codeBig').textContent = S.code || '----';
+    if (msg) $('#waitMsg').textContent = msg;
+
+    var showInvite = S.side === 'A' && !!S.code;
+    $('#inviteBtn').classList.toggle('hidden', !showInvite);
+    $('#inviteLink').classList.toggle('hidden', !showInvite);
+    $('#netHint').classList.toggle('hidden', !showInvite || !isPrivateHost());
+    if (showInvite) $('#inviteLink').textContent = inviteUrl();
+  }
+
+  /* ---- 邀请链接 ---- */
+
+  function inviteUrl() {
+    return location.origin + location.pathname + '?code=' + encodeURIComponent(S.code || '');
+  }
+
+  function isPrivateHost() {
+    var h = location.hostname;
+    return h === 'localhost' || h === '127.0.0.1' || h === '::1' ||
+      /^10\./.test(h) || /^192\.168\./.test(h) || /^172\.(1[6-9]|2\d|3[01])\./.test(h);
+  }
+
+  function invite() {
+    var url = inviteUrl();
+    if (navigator.share) {
+      try {
+        var p = navigator.share({ title: '同频', text: '一起玩这个：两个屏幕，一人一半', url: url });
+        if (p && p['catch']) p['catch'](function () {});
+      } catch (e) { /* 用户取消，忽略 */ }
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        navigator.clipboard.writeText(url).then(function () {
+          toast('邀请链接已复制，发给 TA');
+        })['catch'](function () {
+          toast('长按下面的链接复制');
+        });
+      } catch (e) {
+        toast('长按下面的链接复制');
+      }
+      return;
+    }
+    toast('长按下面的链接复制');
+  }
+
+  function goHome() {
+    clearSession();
+    S.screen = 'home';
+    S.code = null; S.token = null; S.side = null;
+    S.level = null; S.view = null; S.solved = false;
+    S.ended = false; S.paused = false; S.peerOnline = false;
+    hideAll();
+    $('#home').classList.remove('hidden');
+  }
+
+  function showClear() {
+    var el = $('#clear');
+    if (!el.classList.contains('hidden')) return;
+    $('#clearTitle').textContent = (S.level && CLEAR_TITLE[S.level.id]) || '通了';
+    $('#clearSub').textContent = S.level ? ('第 ' + S.level.index + ' 关 · 完成') : '';
+    var btn = $('#nextBtn');
+    btn.disabled = false;
+    btn.textContent = '继续';
+    el.classList.remove('hidden');
+  }
+
+  function hideClear() {
+    $('#clear').classList.add('hidden');
+  }
+
+  var toastTimer = null;
+  function toast(msg) {
+    var el = $('#toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('show'); }, 1800);
+  }
+
+  function showEnd() {
+    if (S.ended) return;
+    S.ended = true;
+    S.screen = 'end';
+    S.paused = false;
+    $('#hud').classList.add('hidden');
+    $('#signals').classList.add('hidden');
+    $('#clear').classList.add('hidden');
+    $('#pause').classList.add('hidden');
+    $('#home').classList.add('hidden');
+    $('#wait').classList.add('hidden');
+    $('#end').classList.remove('hidden');
+    SFX.solved();
+    drawCard();
+  }
+
+  /* ============================ 纪念卡 ============================ */
+
+  function fmtTime(sec) {
+    var m = Math.floor(sec / 60);
+    var s = sec % 60;
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  function drawCard() {
+    var c = $('#cardCv');
+    var g = c.getContext('2d');
+    var W = c.width, H = c.height;
+    g.clearRect(0, 0, W, H);
+
+    var bg = g.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#0d131c');
+    bg.addColorStop(1, '#07090d');
+    g.fillStyle = bg;
+    g.fillRect(0, 0, W, H);
+
+    var cx = W / 2, cy = H * 0.40;
+
+    for (var i = 0; i < 4; i++) {
+      g.beginPath();
+      g.arc(cx, cy, 34 + i * 30, 0, Math.PI * 2);
+      g.strokeStyle = 'rgba(150,210,240,' + (0.14 - i * 0.025) + ')';
+      g.lineWidth = 1;
+      g.stroke();
+    }
+    for (var k = 0; k < 24; k++) {
+      var a = (k / 24) * Math.PI * 2;
+      var r1 = 40, r2 = k % 3 === 0 ? 58 : 48;
+      g.beginPath();
+      g.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+      g.lineTo(cx + Math.cos(a) * r2, cy + Math.sin(a) * r2);
+      g.strokeStyle = 'rgba(160,200,230,.18)';
+      g.lineWidth = 1;
+      g.stroke();
+    }
+
+    g.save();
+    g.translate(cx, cy);
+    g.beginPath();
+    g.moveTo(0, 20);
+    g.bezierCurveTo(-36, -6, -24, -36, 0, -16);
+    g.bezierCurveTo(24, -36, 36, -6, 0, 20);
+    g.closePath();
+    g.fillStyle = 'rgba(255,138,128,.9)';
+    g.shadowColor = 'rgba(255,120,110,.9)';
+    g.shadowBlur = 22;
+    g.fill();
+    g.restore();
+
+    var tx = S.side === 'A' ? W * 0.25 : W * 0.75;
+    g.textAlign = 'center';
+    g.fillStyle = '#e9eef6';
+    g.font = '600 24px system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+    g.fillText('同频', tx, H * 0.72);
+    g.fillStyle = '#8b97a8';
+    g.font = '12px system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+    g.fillText('第一章 · 完成', tx, H * 0.72 + 26);
+    g.fillText('用时 ' + fmtTime(S.stats.elapsed || 0), tx, H * 0.72 + 48);
+
+    var maskX = S.side === 'A' ? W / 2 : 0;
+    g.fillStyle = '#06080c';
+    g.fillRect(maskX, 0, W / 2, H);
+
+    g.beginPath();
+    g.setLineDash([5, 7]);
+    g.moveTo(W / 2, 12);
+    g.lineTo(W / 2, H - 12);
+    g.strokeStyle = 'rgba(255,255,255,.16)';
+    g.lineWidth = 1;
+    g.stroke();
+    g.setLineDash([]);
+
+    g.strokeStyle = 'rgba(255,255,255,.08)';
+    g.lineWidth = 1;
+    g.strokeRect(0.5, 0.5, W - 1, H - 1);
+
+    g.fillStyle = 'rgba(140,160,185,.55)';
+    g.font = '11px system-ui,sans-serif';
+    g.textAlign = 'center';
+    g.fillText(S.side === 'A' ? '左半张' : '右半张', tx, H - 22);
+  }
+
+  /* ============================ 输入 ============================ */
+
+  function toLogical(e) {
+    var r = cv.getBoundingClientRect();
+    return { x: (e.clientX - r.left - OX) / SC, y: (e.clientY - r.top - OY) / SC };
+  }
+
+  function tap11(p) {
+    for (var i = 0; i < 3; i++) {
+      var y = 190 + i * 96;
+      if (p.y > y - 42 && p.y < y + 42 && p.x > 26 && p.x < 334) {
+        if (S.side === 'B') { send({ t: 'action', a: { t: 'cycle', i: i } }); SFX.turn(); }
+        else { send({ t: 'ping', i: i + 1 }); SFX.click(); }
+        return;
+      }
+    }
+    if (S.side === 'A' && p.y > 470 && p.y < 530 && p.x > 96 && p.x < 264) {
+      send({ t: 'action', a: { t: 'light' } });
+      SFX.click();
+    }
+  }
+
+  function tap12(p) {
+    if (S.side === 'A') {
+      var sy0 = cellY(2), sy1 = cellY(6);
+      if (p.x < 52 && Math.abs(p.y - sy0) < 24) { send({ t: 'action', a: { t: 'source', s: 0 } }); SFX.click(); return; }
+      if (p.x < 52 && Math.abs(p.y - sy1) < 24) { send({ t: 'action', a: { t: 'source', s: 1 } }); SFX.click(); return; }
+      var mirrors = (S.view && S.view.mirrors) || [];
+      for (var j = 0; j < mirrors.length; j++) {
+        var m = mirrors[j];
+        var mx = cellX(m.c), my = cellY(m.r);
+        if (Math.hypot(p.x - mx, p.y - my) < 20) { send({ t: 'ping', i: m.i }); SFX.click(); return; }
+      }
+    } else {
+      var spots = [[30, 150], [190, 150], [30, 290], [190, 290]];
+      for (var q = 0; q < 4; q++) {
+        var bx = spots[q][0], by = spots[q][1];
+        if (p.x > bx && p.x < bx + 140 && p.y > by && p.y < by + 118) {
+          send({ t: 'action', a: { t: 'turn', i: q + 1 } });
+          SFX.turn();
+          return;
+        }
+      }
+    }
+  }
+
+  function tap13(p) {
+    var hx = 180, hy = 460;
+    if (Math.hypot(p.x - hx, p.y - hy) < 54) {
+      if (!S.holding) {
+        S.holding = true;
+        send({ t: 'action', a: { t: 'hold', on: true } });
+        SFX.hold();
+      }
+      return;
+    }
+    for (var i = 0; i < 3; i++) {
+      var x = 84 + i * 96, y = 300;
+      if (Math.hypot(p.x - x, p.y - y) < 50) {
+        var owner = (i === 0 || i === 2) ? 'A' : 'B';
+        if (owner === S.side) {
+          send({ t: 'action', a: { t: 'turn', i: i } });
+          SFX.turn();
+        }
+        return;
+      }
+    }
+  }
+
+  function releaseHold() {
+    if (!S.holding) return;
+    S.holding = false;
+    send({ t: 'action', a: { t: 'hold', on: false } });
+  }
+
+  cv.addEventListener('pointerdown', function (e) {
+    SFX.init();
+    if (S.paused || S.screen !== 'game' || !S.level) return;
+    e.preventDefault();
+    var p = toLogical(e);
+    var id = S.level.id;
+    if (id === '1-1') tap11(p);
+    else if (id === '1-2') tap12(p);
+    else if (id === '1-3') tap13(p);
+  }, { passive: false });
+
+  window.addEventListener('pointerup', releaseHold);
+  window.addEventListener('pointercancel', releaseHold);
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) releaseHold();
+  });
+
+  /* ============================ UI 绑定 ============================ */
+
+  $('#createBtn').addEventListener('click', function () {
+    SFX.init();
+    send({ t: 'create' });
+  });
+
+  $('#joinBtn').addEventListener('click', function () {
+    SFX.init();
+    $('#joinBox').classList.toggle('hidden');
+    if (!$('#joinBox').classList.contains('hidden')) {
+      setTimeout(function () { $('#codeInput').focus(); }, 60);
+    }
+  });
+
+  $('#codeInput').addEventListener('input', function (e) {
+    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
+  });
+
+  function doJoin() {
+    var code = $('#codeInput').value.replace(/\D/g, '');
+    if (code.length !== 4) { toast('请输入 4 位房间码'); return; }
+    LAST_CODE = code;
+    send({ t: 'join', code: code });
+  }
+
+  $('#joinGo').addEventListener('click', doJoin);
+  $('#codeInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') doJoin();
+  });
+
+  $('#cancelWait').addEventListener('click', function () {
+    send({ t: 'leave' });
+    goHome();
+  });
+
+  $('#inviteBtn').addEventListener('click', function () {
+    SFX.init();
+    invite();
+  });
+
+  $('#pauseBtn').addEventListener('click', function () {
+    if (S.screen !== 'game') return;
+    S.paused = true;
+    S.screen = 'pause';
+    releaseHold();
+    $('#pause').classList.remove('hidden');
+  });
+
+  $('#resumePlay').addEventListener('click', function () {
+    S.paused = false;
+    $('#pause').classList.add('hidden');
+    if (!S.peerOnline) { showWait('对方掉线了，等待重连…'); return; }
+    if (S.level) showGame();
+    if (S.solved) showClear(); else hideClear();
+  });
+
+  $('#restartBtn').addEventListener('click', function () {
+    send({ t: 'restart' });
+    S.paused = false;
+    $('#pause').classList.add('hidden');
+    if (S.level) showGame();
+    hideClear();
+    toast('本机关已重置');
+  });
+
+  $('#soundBtn').addEventListener('click', function () {
+    SFX.on = !SFX.on;
+    if (SFX.on) { SFX.init(); SFX.click(); }
+    $('#soundBtn').textContent = '音效：' + (SFX.on ? '开' : '关');
+  });
+
+  $('#leaveBtn').addEventListener('click', function () {
+    send({ t: 'leave' });
+    goHome();
+  });
+
+  $('#nextBtn').addEventListener('click', function () {
+    send({ t: 'ready' });
+    this.disabled = true;
+    this.textContent = '等待 TA…';
+  });
+
+  document.querySelectorAll('.sig').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var k = b.getAttribute('data-k');
+      send({ t: 'signal', kind: k });
+      toast('已发送：' + SIGNAL_LABEL[k]);
+      SFX.click();
+      b.classList.add('cool');
+      setTimeout(function () { b.classList.remove('cool'); }, 420);
+    });
+  });
+
+  $('#saveCard').addEventListener('click', function () {
+    try {
+      var c = $('#cardCv');
+      var a = document.createElement('a');
+      a.download = '同频-' + (S.side === 'A' ? '左半' : '右半') + '.png';
+      a.href = c.toDataURL('image/png');
+      a.click();
+    } catch (e) {
+      toast('保存失败，可长按图片保存');
+    }
+  });
+
+  /* ============================ 开发者预览 ============================ */
+  /* 只在加 ?demo=1-1 / ?demo=1-2 / ?demo=1-3 时生效，用来单机看画面（可加 &side=B）*/
+  function startDemo(id, side) {
+    var table = {
+      '1-1': {
+        index: 1, title: '三盏灯',
+        A: { req: [1, 0, 2], checked: [true, false, false] },
+        B: { cur: [2, 0, 2] }
+      },
+      '1-2': {
+        index: 2, title: '四面镜',
+        A: {
+          target: { c: 6, r: 2 }, src: 0,
+          mirrors: [
+            { i: 1, c: 2, r: 2 },
+            { i: 2, c: 2, r: 6 },
+            { i: 3, c: 4, r: 6 },
+            { i: 4, c: 4, r: 2 }
+          ],
+          path: [[0, 2], [1, 2], [2, 2], [2, 1], [2, 0]],
+          hit: false
+        },
+        B: {
+          src: 0,
+          mirrors: [
+            { i: 1, a: '/' }, { i: 2, a: '/' }, { i: 3, a: '\\' }, { i: 4, a: '\\' }
+          ]
+        }
+      },
+      '1-3': {
+        index: 3, title: '同频',
+        A: { target: [2, 1, 1], own: [0, 2], hold: { A: true, B: false }, holdMs: 1200 },
+        B: { cur: [0, 1, 2], hold: { A: true, B: true }, holdMs: 900 }
+      }
+    };
+    var item = table[id];
+    if (!item) return;
+    S.side = side;
+    S.code = 'DEMO';
+    S.peerOnline = true;
+    S.level = { id: id, chapter: 1, index: item.index, title: item.title, total: 3 };
+    S.view = side === 'A' ? item.A : item.B;
+    var hint = $('#connHint');
+    if (hint) hint.textContent = '预览模式 · ' + id + ' · ' + side + ' 端';
+    showGame();
+  }
+
+  /* ============================ 启动 ============================ */
+
+  try {
+    var codeParam = new URLSearchParams(location.search).get('code') || '';
+    PENDING_CODE = codeParam.replace(/\D/g, '').slice(0, 4);
+    if (PENDING_CODE.length !== 4) PENDING_CODE = '';
+  } catch (e) {
+    PENDING_CODE = '';
+  }
+
+  var demoMatch = location.search.match(/[?&]demo=([\w-]+)/);
+  if (demoMatch) {
+    startDemo(demoMatch[1], /(?:^|[?&])side=B(?:&|$)/.test(location.search) ? 'B' : 'A');
+  } else {
+    connect();
+  }
+  requestAnimationFrame(loop);
+
+  // 页面回到前台时，如果还握着按钮，松开
+  window.addEventListener('blur', releaseHold);
+})();
+</script>
+</body>
+</html>

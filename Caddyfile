@@ -1,0 +1,8 @@
+# 自己的 VPS：把域名 A 记录指向服务器 IP，然后
+#   caddy run --config Caddyfile
+# Caddy 会自动申请 HTTPS 证书，并原生支持 WebSocket 升级。
+# 把 game.example.com 换成你的域名。
+game.example.com {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8080
+}

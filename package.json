@@ -1,0 +1,15 @@
+{
+  "name": "sync-room",
+  "version": "0.1.0",
+  "private": true,
+  "description": "同频 · 双屏非对称协作解谜（手机网页，双人各一部手机）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/smoke.js && node test/render.js && node test/deeplink.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
